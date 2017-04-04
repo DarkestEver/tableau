@@ -14,13 +14,27 @@ error_reporting(E_ALL);
 						'charset' => 'utf8'
 						));
 		
-	function getTFliters()
+	function getTFliters($nameofdashboard)
 	{
 			$db = MysqliDb::getInstance();
+			$db->where("status","1");
+			$db->where("dashboardid",$nameofdashboard);
 			$jsload = $db->get("jsload");
 			return $jsload;
 	}
-	
+	function getTDashboard()
+	{
+			$db = MysqliDb::getInstance();
+			$db->where("status","1");
+			$jsload = $db->get("dashboards");
+			return $jsload;
+	}
+	function getTCong()
+	{
+			$db = MysqliDb::getInstance();
+			$jsload = $db->get("config");
+			return $jsload;
+	}
 	function getSingleCommand($id)
 	{
 			$db = MysqliDb::getInstance();
@@ -101,6 +115,37 @@ error_reporting(E_ALL);
 			 return 0;
 	 }
 	 
+	 function updateConfigs($id,$val,$status)
+	 {
+		 $db = MysqliDb::getInstance();
+			   $data = Array (
+               "congvalues" => $val,
+               "status" => $status
+				);
+		$db->where ('id', $id);
+		if ($db->update ('config', $data))
+			 return 1;
+		 else
+			 return 0;
+	 }
+	 
+	 function updateDashboard($id,$dashboardname,$url,$defaultdash,$status)
+	 {
+		 $db = MysqliDb::getInstance();
+			   $data = Array (
+               "dashboardname" => $dashboardname,
+			   "url" => $url,
+			   "defaultdash" => $defaultdash,
+			   
+               "status" => $status
+				);
+		$db->where ('id', $id);
+		if ($db->update ('dashboards', $data))
+			 return 1;
+		 else
+			 return 0;
+	 }
+	 
 	 function getTypeDropdown()
 	 {
 		 $db = MysqliDb::getInstance();
@@ -131,5 +176,9 @@ error_reporting(E_ALL);
 	  $data = htmlspecialchars($data);
 	  return $data;
 }
+
+		
+		$keyPairCongig = array();
+		$keyPairCongig = keyPairValue('config','congkey','congvalues');
 
 	?>

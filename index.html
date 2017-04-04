@@ -5,10 +5,9 @@
 <link rel="stylesheet" href="Admin/bootstrap/css/bootstrap.min.css" type="text/css" />
 <script src="Admin/bootstrap/js/jquery.min.js"></script>
 <script src="Admin/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
-<script src="annyang.min.js"></script>
-<script src="responsivevoice.js"></script>
-<script src="https://online.tableau.com/javascripts/api/tableau-2.min.js" type="text/javascript"></script> 
-<script type="text/javascript" src="scripttableau.php"> </script>
+<script src="js/annyang.min.js" id="annyang"></script>
+<script src="js/responsivevoice.js"></script>
+<script src="js/tableau-2.min.js" type="text/javascript"></script> 
 
 <script type="text/javascript">
 $( document ).ready(function() {
@@ -16,37 +15,22 @@ $( document ).ready(function() {
 	$("#micIndicatorOff").hide();
 	 
 	$('#imgStart').click(function() {
-        manualStarTableau();
+       
+		stopTableau();
+		console.log('start');
 	 });
 	 $('#imgStop').click(function() {
-        manualStopTableau();
+		
+		console.log('stop');
+		startTableau();
 	 });
 });
 
-function manualStopTableau()
-{
-	$("#micIndicator").hide();
-	$("#micIndicatorOff").show();
-	stopTableau();
-}
-function manualStarTableau()
-{
-	$("#micIndicator").show();
-	$("#micIndicatorOff").hide();
-	startTableau();
-}
+
 
 </script>
 <style type="text/css">
-            .buttonOff{
-                background: url(./images/off.png) no-repeat;
-                cursor:pointer;
-                border: none;
-            }
-			.header
-			{
-			
-			}
+           
 			#wrapper {
 				width: 100%;
 			}	
@@ -55,7 +39,9 @@ function manualStarTableau()
 			}
 			
         </style>
-<script type="text/javascript" src="voice2.php"></script> 
+<script type="text/javascript" src="tableau.php"></script> 
+
+
 </head>
 
 <body onload="initViz('');">
@@ -74,12 +60,12 @@ function manualStarTableau()
 
 	
 			<ul class = "nav navbar-top-links navbar-right" style="margin-right:15px; margin-top:10px;" >
-				<li id="micIndicator"  >
+				<li id="micIndicatorOff"  >
 					<img style="background: url(./images/off.png) no-repeat;cursor:pointer;border: none;" id="imgStop" src="./images/off.png" />
 					<!-- <input type="image" name="button"  onclick="manualStopTableau()"  style="background: url(./images/off.png) no-repeat;cursor:pointer;border: none;"></input> -->
 				</li>
-				<li id="micIndicatorOff"  >
-					<img style="background: url(./images/on.png) no-repeat;cursor:pointer;border: none;" id="imgStart" src="./images/on.png" />
+				<li id="micIndicator"  >
+					<img style="background: url(./images/on.png) no-repeat;cursor:pointer;border: none;disabled:none;" id="imgStart" src="./images/on.png" />
 					<!-- <input type="image" name="button" text=""  onclick="manualStarTableau()" style="background: url(./images/on.png) no-repeat;cursor:pointer;border: none;"></input> -->
 				</li>
 				</ul>
@@ -110,5 +96,9 @@ function manualStarTableau()
 
 
 </div>
+<script>
+// Start listening.
+ annyang.start();
+</script>
 </body>
 </html>

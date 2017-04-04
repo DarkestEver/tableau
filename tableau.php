@@ -1,7 +1,4 @@
 <?php require_once ("Admin/functions.php"); 
-$filters = getTFliters();	
-$keyPairCongig = array();
-$keyPairCongig = keyPairValue('config','congkey','congvalues');
 ?>
 
 var wordSeprator = '<?php echo  $keyPairCongig['wordSeprator']; ?>';
@@ -21,7 +18,7 @@ var vizUrl;
 						hideTabs: false,
 						hideToolbar: false,
                 
-				onFirstInteractive: function () {
+						 onFirstInteractive: function () {
 						 if (tableausheet === "") {          
 							var sheet = viz.getWorkbook().getActiveSheet();	
 						 }
@@ -30,30 +27,28 @@ var vizUrl;
 							var sheet = viz.getWorkbook().getActiveSheet().getWorksheets().get(tableausheet);
 						 }
 						 Speech('<?php echo  $keyPairCongig['startvoice']; ?>');
-						 $("#micIndicator").hide();
+						 
 						 $("#micIndicatorOff").show();
+						 $("#micIndicator").hide();
+						 
 						 
                 }
                 };
 			viz = new tableau.Viz(containerDiv, url, options);
-			
+			addDashboardScript('<?php echo  $keyPairCongig['rirstloadurl']; ?>');
 			
 		
         }
         
 		
-		function tNavigate(url,tableausheet) {
+		function tNavigate(dashboardname,url) {
             var containerDiv = document.getElementById("vizContainer"),
 				options = {
                 
 				onFirstInteractive: function () {
-						 if (tableausheet === "") {          
+						
 							var sheet = viz.getWorkbook().getActiveSheet();
-						 }
-						 else
-						 {
-							var sheet = viz.getWorkbook().getActiveSheet().getWorksheets().get(tableausheet);
-						 }
+						
                 }
                 };
 				 if (viz) { // If a viz object exists, delete it.
@@ -61,6 +56,8 @@ var vizUrl;
             }
             vizUrl = url;
 			viz = new tableau.Viz(containerDiv, url, options);
+			addDashboardScript(dashboardname);
+			startTableau();
         }
 		
 		
@@ -356,162 +353,13 @@ function scrolltop(dimension, fvalue, tableausheet)
 	window.scrollTop	
 }		
 
-
-		
-//////////////////////////// voice //////////////
-if (annyang) {
-  // These are the voice commands in quotes followed by the function
- 
-	
-		  var commands = {
-			'start tableau': function() { tov=1;  Speech('<?php echo  $keyPairCongig['startingtableauvoice']; ?>'); startTableau();},
-			'stop tableau': function() { tov=0;  Speech('<?php echo  $keyPairCongig['stopingtableauvoice']; ?>');stopTableau()},
-			
-		 };
-		 // remove all commands
-		 annyang.removeCommands();
-		 // Add commands to annyang
-		 annyang.addCommands(commands);
-  // Start listening.
-  annyang.start();
-  
-<?php
-if( (isset($keyPairCongig['error'])  ? $keyPairCongig['error'] : null   ) != null)
-{ ?>
-	annyang.addCallback('error', function() {
-	Speech('<?php echo  $keyPairCongig['error']; ?>');
-	});
-<?php
-}
-?>
-
-<?php
-if( (isset($keyPairCongig['errorNetwork'])  ? $keyPairCongig['errorNetwork'] : null   ) != null)
-{ ?>
-annyang.addCallback('errorNetwork', function() {
-Speech('<?php echo  $keyPairCongig['errorNetwork']; ?>');
-});
-<?php
-}
-?>
-
-<?php
-if( (isset($keyPairCongig['errorPermissionBlocked'])  ? $keyPairCongig['errorPermissionBlocked'] : null   ) != null)
-{ ?>
-annyang.addCallback('errorPermissionBlocked', function() {
-Speech('<?php echo  $keyPairCongig['errorPermissionBlocked']; ?>');
-});
-<?php
-}
-?>
-
-<?php
-if( (isset($keyPairCongig['errorPermissionDenied'])  ? $keyPairCongig['errorPermissionDenied'] : null   ) != null)
-{ ?>
-annyang.addCallback('errorPermissionDenied', function() {
-Speech('<?php echo  $keyPairCongig['errorPermissionDenied']; ?>');
-});
-<?php
-}
-?>
-
-<?php
-if( (isset($keyPairCongig['end'])  ? $keyPairCongig['end'] : null   ) != null)
-{ ?>
-annyang.addCallback('end', function() {
-Speech('<?php echo  $keyPairCongig['end']; ?>');
-});
-<?php
-}
-?>
-
-}
-
-
-
-
-function startTableau()
+function addDashboardScript(nameofdashboard)
 {
-annyang.removeCommands(['start tableau']);
-var cmd2 = {'stop tableau': function() { tov=0;  Speech('<?php echo  $keyPairCongig['startingtableauvoice']; ?>');stopTableau();},
-	<?Php	foreach ($filters as $filter)
-	{
-			if($filter['type'] == 'tNavigate')
-			{
-				if ($filter['Speech'] != '')
-				{
-				echo "'". $filter['command']."' : function() { tNavigate ( '".$filter['value']."','".$filter['TableauSheet']."'); Speech('".$filter['Speech']."'); },";			
-				}
-				else
-				{
-					echo "'". $filter['command']."' : function() { tNavigate( '".$filter['value']."','".$filter['TableauSheet']."'); },";			
-				}
-			}
-			else if ($filter['type'] == 'Dynamic Table Command')
-				{
-				
-					$dynCmds = getCmdTypeSingleCol($filter['TableauTable'] , $filter['dimension'] );
-					echo "'". $filter['command'].' clear'. "' : function() { tClearfilter( '".$filter['dimension']."','','".$filter['TableauSheet']."'); Speech('".$filter['Speech']."'); },";			
-					echo "'". $filter['command'].' all'. "' : function() { tAllfilter( '".$filter['dimension']."','','".$filter['TableauSheet']."'); Speech('".$filter['Speech']."'); },";			
-												
-					foreach ($dynCmds as $dynCmd)
-					{
-															
-						if ($filter['Speech'] != '')
-						{ 
-							echo "'". $filter['command'].' '. $dynCmd."' : function() { tFilter( '".$filter['dimension']."','".$dynCmd."','".$filter['TableauSheet']."'); Speech('".$filter['Speech'].' '.$dynCmd."'); },";			
-							echo "'". $filter['command'].' add '. $dynCmd."' : function() { tAddfilter( '".$filter['dimension']."','".$dynCmd."','".$filter['TableauSheet']."'); Speech('".$filter['Speech'].' '.$dynCmd."'); },";			
-							echo "'". $filter['command'].' remove '. $dynCmd."' : function() { tRemovefilter( '".$filter['dimension']."','".$dynCmd."','".$filter['TableauSheet']."'); Speech('".$filter['Speech'].' '.$dynCmd."'); },";			
-						}
-						else
-						{
-							echo "'". $filter['command'].' '. $dynCmd."' : function() { tFilter( '".$filter['dimension']."','".$dynCmd."','".$filter['TableauSheet']."'); },";			
-							echo "'". $filter['command'].' add '. $dynCmd."' : function() { tAddfilter( '".$filter['dimension']."','".$dynCmd."','".$filter['TableauSheet']."'); },";		
-							echo "'". $filter['command'].' remove '. $dynCmd."' : function() { tRemovefilter( '".$filter['dimension']."','".$dynCmd."','".$filter['TableauSheet']."'); },";		
-						}
-					}
-									
-				}
-				else if ($filter['type'] == 'speech' )
-						{
-								echo "'". $filter['command']."' : function() {  Speech('".$filter['Speech']."');  },";
-						}
-						else
-						{
-							if ($filter['Speech'] != '')
-							{
-							echo "'". $filter['command']."' : function() { ". $filter['type']." ( '".$filter['dimension']."','".$filter['value']."','".$filter['TableauSheet']."'); Speech('".$filter['Speech']."'); },";			
-							}
-							else
-							{
-								echo "'". $filter['command']."' : function() { ". $filter['type']." ( '".$filter['dimension']."','".$filter['value']."','".$filter['TableauSheet']."'); },";			
-							}
-						}
-			
-							
-	}			
-	?>
-		};
-		
-annyang.addCommands(cmd2);
+$('#dynamicscript').remove();
+var s = document.createElement("script");
+s.type = "text/javascript";
+s.src = "voice.php?id=" + nameofdashboard;
+s.id = "dynamicscript"
+$("head").append(s);
 
-
-<?php
-if( (isset($keyPairCongig['resultNoMatch'])  ? $keyPairCongig['resultNoMatch'] : null   ) != null)
-{ ?>
-	annyang.addCallback('resultNoMatch', function() {
-	Speech('<?php echo  $keyPairCongig['resultNoMatch']; ?>');
-	});
-<?php
-}
-?>
-
-
-
-}
-function stopTableau()
-{
-annyang.removeCommands(['stop tableau']);
-var cmd2 = {'start tableau': function() { tov=1;  Speech('<?php echo  $keyPairCongig['startingtableauvoice']; ?>'); startTableau();},};
-annyang.addCommands(cmd2);
 }

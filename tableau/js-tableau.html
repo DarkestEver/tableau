@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>JS Tableau Demo</title>
+        <script src="http://public.tableau.com/javascripts/api/tableau_v8.debug.js"></script>
+        <style>
+            body {
+                font-family: sans-serif;
+            }
+            h3 {
+                margin-bottom: 0;
+            }
+            .page {
+                display: flex;
+            }
+            .interaction-list {
+                display: flex;
+                flex-direction: column;
+                padding: 10px;
+            }
+            .interaction-options {
+                margin-bottom: 10px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="page">
+            <div class="left-column">
+                <div class="views">
+                    <h3>Viz Views</h3>
+                    <div class="interaction-list">
+                        <a href="#" class="interaction-options show-tree-map">Tree Map</a>
+                        <a href="#" class="interaction-options show-line-chart">Line Chart</a>
+                        <a href="#" class="interaction-options show-word-cloud">Word Cloud</a>
+                        <a href="#" class="interaction-options show-dashboard">Dashboard</a>
+                    </div>
+                    <h3>Viz Filters</h3>
+                    <!-- this gives same functionality as clicking the categories below the graph -->
+                    <div class="interaction-list">
+                        <a href="#" class="interaction-options books-only">Show Only Books</a>
+                        <a href="#" class="interaction-options also-certificates-dolls-electronics-books">Also Show Certificates, Dolls, Electronics, Books</a>
+                        <a href="#" class="interaction-options no-gift-certs">Don't Show Gift Certificates</a>
+                        <a href="#" class="interaction-options clear-category-filter">Clear Category Filter</a>
+                        <a href="#" class="interaction-options electronics-marks">Select Electronics Marks</a>
+                    </div>
+                </div>
+                <div class="views">
+                    <h3>Advanced Filters</h3>
+                    <!-- this gives same functionality as clicking the categories below the graph -->
+                    <div class="interaction-list">
+                        <a href="#" class="interaction-options filter-to-range">Filter to Range</a>
+                        <a href="#" class="interaction-options filter-to-date-categorical">Show 1999 - 2003 Categorically</a>
+                        <a href="#" class="interaction-options filter-to-date-range">Show 1995 - 2005 with Range</a>
+                        <a href="#" class="interaction-options filter-to-relative-date">Show Last 10 years</a>
+                        <a href="#" class="interaction-options filter-to-relative-date-anchor">Show 10 years 1990 - 2000</a>
+                    </div>
+                </div>
+            </div>
+            <div class="right-column">
+                <h3>JavaScript API Tutorial</h3>
+                <h4 class="sheet-name"></h4>
+                <div id="Viz"></div>
+            </div>
+        </div>
+        <script>
+            var vizContainer = document.getElementById('Viz');
+            var vizUrl = "http://public.tableausoftware.com/views/Presents/TreeMap";
+            var currentViz = document.querySelector('.sheet-name');
+            var options = {
+                width: '600px',
+                height: '540px',
+                hideTabs: true,
+                // when the workbook is ready to be interacted with
+                onFirstInteractive: function() {
+                    // set the page sub heading when page is ready
+                    currentViz.innerHTML = viz.getWorkbook().getActiveSheet().getName();
+                }
+            };
+            var viz = new tableauSoftware.Viz(vizContainer, vizUrl, options);
+            
+            // switching views (video 02-switching_views)
+            var switchView = function(sheetName) {
+                var workbook = viz.getWorkbook();
+                workbook.activateSheetAsync(sheetName);
+            };
+            var showTreeMap = document.querySelector('.show-tree-map');
+            showTreeMap.addEventListener('click', function(evt) {
+                evt.preventDefault();
+                switchView('TreeMap');
+            });
+            var showLineChart = document.querySelector('.show-line-chart');
+            showLineChart.addEventListener('click', function(evt) {
+                evt.preventDefault();
+                switchView('LineChart');
+            });
+            var showWordCloud = document.querySelector('.show-word-cloud');
+            showWordCloud.addEventListener('click', function(evt) {
+                evt.preventDefault();
+                switchView('WordCloud');
+            });
+            var showDashboard = document.querySelector('.show-dashboard');
+            showDashboard.addEventListener('click', function(evt) {
+                evt.preventDefault();
+                switchView('MyDashboard');
+            });
+            
+            // filtering (video 03-filtering.mp4)
+            var showOnly = function(filterName /* name of the dimension */, values) {
+                // you can only affect the sheet that is being shown
+                var sheet = viz.getWorkbook().getActiveSheet();
+                
+                // sheet.applyFilterAsync doesn't work when we are looking at a 
+                /// dashboard
+                if (sheet.getSheetType() === 'worksheet') {
+                    // REPLACE is how to filter (a filter type); it will now only show
+                    // the values I am asking for now
+                    sheet.applyFilterAsync(filterName, values, 'REPLACE');
+                }
+                // it's a dashboard
+                else {
+                    // get all sheets in the dashboard
+                    var worksheetArray = sheet.getWorksheets();
+                    
+                    worksheetArray.forEach(function(worksheet, i) {
+                        // apply filter to all worksheets
+                        worksheet.applyFilterAsync(filterName, values, 'REPLACE');
+                    });
+                }
+            };
+            var showOnlyBooks = document.querySelector('.books-only');
+            showOnlyBooks.addEventListener('click', function(evt) {
+                evt.preventDefault();
+                showOnly('Category', 'Book');
+            });
+
+            var alsoShow = function(filterName, values) {
+                // you can only affect the sheet that is being shown
+                var sheet = viz.getWorkbook().getActiveSheet();
+                
+                // sheet.applyFilterAsync doesn't work when we are looking at a 
+                /// dashboard
+                if (sheet.getSheetType() === 'worksheet') {
+                    // ADD is how to filter (a filter type); it will add
+                    // to whatever is currently there now
+                    sheet.applyFilterAsync(filterName, values, 'ADD');
+                }
+                // it's a dashboard
+                else {
+                    // get all sheets in the dashboard
+                    var worksheetArray = sheet.getWorksheets();
+                    
+                    worksheetArray.forEach(function(worksheet, i) {
+                        // apply filter to all worksheets
+                        worksheet.applyFilterAsync(filterName, values, 'ADD');
+                    });
+                }
+            }
+            var alsoShowLotsOfThings = document.querySelector('.also-certificates-dolls-electronics-books');
+            alsoShowLotsOfThings.addEventListener('click', function(evt) {
+                evt.preventDefault();
+                alsoShow('Category', ['Gift Certificates', 'Doll', 'Electronics', 'Books']);
+            });
+
+            var dontShow = function(filterName, values) {
+                // you can only affect the sheet that is being shown
+                var sheet = viz.getWorkbook().getActiveSheet();
+                
+                // sheet.applyFilterAsync doesn't work when we are looking at a 
+                /// dashboard
+                if (sheet.getSheetType() === 'worksheet') {
+                    sheet.applyFilterAsync(filterName, values, 'REMOVE');
+                }
+                // it's a dashboard
+                else {
+                    // get all sheets in the dashboard
+                    var worksheetArray = sheet.getWorksheets();
+                    
+                    worksheetArray.forEach(function(worksheet, i) {
+                        // apply filter to all worksheets
+                        worksheet.applyFilterAsync(filterName, values, 'REMOVE');
+                    });
+                }
+            }
+            var noGiftCerts = document.querySelector('.no-gift-certs');
+            noGiftCerts.addEventListener('click', function(evt) {
+                evt.preventDefault();
+                dontShow('Category', 'Gift Certificates');
+            });
+
+
+            var clearFilter = function(filterName) {
+                // you can only affect the sheet that is being shown
+                var sheet = viz.getWorkbook().getActiveSheet();
+                
+                // sheet.copyFilterAsync doesn't work when we are looking at a 
+                /// dashboard
+                if (sheet.getSheetType() === 'worksheet') {
+                    sheet.clearFilterAsync(filterName);
+                }
+                // it's a dashboard
+                else {
+                    // get all sheets in the dashboard
+                    var worksheetArray = sheet.getWorksheets();
+                    
+                    worksheetArray.forEach(function(worksheet, i) {
+                        // apply filter to all worksheets
+                        worksheet.clearFilterAsync(filterName);
+                    });
+                }
+            }
+            var clearFilterBtn = document.querySelector('.clear-category-filter');
+            clearFilterBtn.addEventListener('click', function(evt) {
+                evt.preventDefault();
+                clearFilter('Category');
+            });
+            
+            
+            // select marks (highlights a category without hiding the others)
+            // select marks functionality is like applyFilterAsync functionality
+            /// to clear is called clearSelectedMarksAsync()
+            var selectMarks = function(filterName, values) {
+                // you can only affect the sheet that is being shown
+                var sheet = viz.getWorkbook().getActiveSheet();
+                
+                // sheet.copyFilterAsync doesn't work when we are looking at a 
+                /// dashboard
+                if (sheet.getSheetType() === 'worksheet') {
+                    sheet.selectMarksAsync(filterName, values, 'REPLACE');
+                }
+                // it's a dashboard
+                else {
+                    // get all sheets in the dashboard
+                    var worksheetArray = sheet.getWorksheets();
+                    
+                    worksheetArray.forEach(function(worksheet, i) {
+                        // apply filter to all worksheets
+                        worksheet.selectMarksAsync(filterName, values, 'REPLACE');
+                    });
+                }
+            }
+            var selectMarksBtn = document.querySelector('.electronics-marks');
+            selectMarksBtn.addEventListener('click', function(evt) {
+                evt.preventDefault();
+                selectMarks('Category', 'Electronics');
+            });
+
+            // video 5: event listeners - listen for things that happen in the viz
+            // viz.addEventListener(/* type of event, e.g. `marksselection` */, /* callback when event happens */);
+            // viz.removeEventListener(/* type of event, e.g. `marksselection` */);
+            
+            // listen for switch to new sheet and change page sub title
+            var sheetName = document.querySelector('.sheet-name');
+            viz.addEventListener('tabswitch', function(evt) {
+                sheetName.innerHTML = evt.getNewSheetName();
+            });
+            
+            // video 6: advanced filtering
+            function showRange(filter, minVal, maxVal) {
+                var workbook = viz.getWorkbook();
+                var sheet = workbook.getActiveSheet();
+                sheet.applyRangeFilterAsync(filter, {
+                    // can filter on min or max or both
+                    min: minVal,
+                    max: maxVal
+
+                    // what should filter do with null values?
+                    // show only null values
+                    // nullOption: "nullValues"
+                    // don't show null values
+                    // nullOption: "nonNullValues"
+                    // show null and non null values
+                    // nullOption: "allValues"
+                });
+            }
+            // filter by values
+            var filterToRangeBtn = document.querySelector('.filter-to-range');
+            filterToRangeBtn.addEventListener('click', function(evt) {
+                evt.preventDefault();
+                showRange('SUM(Number of Toys)', 2, 5);
+            });
+            // filter categorically by date
+            var filterToDateBtn = document.querySelector('.filter-to-date-categorical');
+            filterToDateBtn.addEventListener('click', function(evt) {
+                evt.preventDefault();
+                // this is a categorical filter, but asking for different type of filter
+                // second argument is all the things we want included
+                showOnly('YEAR(Date)', ['1999','2000','2001','2002','2003'])
+            });
+            
+            // filter by date range
+            function showDateRange(filter, minDate, maxDate) {
+                var workbook = viz.getWorkbook();
+                var sheet = workbook.getActiveSheet();
+                
+                sheet.applyRangeFilterAsync(filter, {
+                    // can use min, max, or both
+                    // takes string and makes it a Date object
+                    min: new Date(minDate),
+                    max: new Date(maxDate)
+                    // isExcludeMode true/false (will be exclusive of min and max dates, defaults to false)
+                });
+            }
+            var filterToDateRangeBtn = document.querySelector('.filter-to-date-range');
+            filterToDateRangeBtn.addEventListener('click', function(evt) {
+                evt.preventDefault();
+                // this is a categorical filter, but asking for different type of filter
+                // second argument is all the things we want included
+                showDateRange('Date', '1995','2005');
+            });
+            
+            // relative date filter
+            function showLastNYears(filter, years, anchor) {
+                var workbook = viz.getWorkbook();
+                var sheet = workbook.getActiveSheet();
+                // either anchor or today
+                var dateObj = anchor ? new Date(anchor) : new Date();
+
+                sheet.applyRelativeDateFilterAsync(filter, {
+                    periodType: tableau.PeriodType.YEAR, // month, week, day, etc.
+                    rangeType: tableau.DateRangeType.LASTN, // nextn
+                    rangeN: years,
+                    // from when
+                    anchorDate: dateObj
+                });
+            }
+            var filterToDateRelative = document.querySelector('.filter-to-relative-date');
+            filterToDateRelative.addEventListener('click', function(evt) {
+                evt.preventDefault();
+                showLastNYears('Date', 10);
+            });
+            // use anchor (what relative date is relative to)
+            var filterToDateRelativeAnchor = document.querySelector('.filter-to-relative-date-anchor');
+            filterToDateRelativeAnchor.addEventListener('click', function(evt) {
+                evt.preventDefault();
+                showLastNYears('Date', 10, '2000');
+            });
+        </script>
+    </body>
+</html>
