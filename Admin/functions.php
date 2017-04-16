@@ -1,19 +1,28 @@
 <?php 
 require_once ("php-mysql/MysqliDb.php");
 error_reporting(E_ALL);
-   
-	
+ $root = $_SERVER['DOCUMENT_ROOT'];
+ $installationDir = "tableau";
+$json = json_decode(file_get_contents($root."/".$installationDir."/admin/dbconf.json"),TRUE);
+
 	//conDb ();
 	$db = new MysqliDb (Array (
-						'host' => 'localhost',
-						'username' => 'root',
-						'password' => 'root',
-						'db' => 'test',
-						'port' => 3306,
-						'prefix' => '',
-						'charset' => 'utf8'
+						'host' =>  $json['host'],
+						'username' =>  $json['username'],
+						'password' => $json['password'],
+						'db' =>  $json['db'],
+						'port' =>  $json['port'],
+						'prefix' => $json['prefix'],
+						'charset' => $json['charset']
 						));
-		
+	
+	function getTAllFliters($nameofdashboard)
+	{
+			$db = MysqliDb::getInstance();
+			$jsload = $db->get("jsload");
+			return $jsload;
+	}
+	
 	function getTFliters($nameofdashboard)
 	{
 			$db = MysqliDb::getInstance();
@@ -22,11 +31,48 @@ error_reporting(E_ALL);
 			$jsload = $db->get("jsload");
 			return $jsload;
 	}
-	function getTDashboard()
+	function getTFlitersWithNull()
 	{
 			$db = MysqliDb::getInstance();
 			$db->where("status","1");
+			$db->where("dashboardid","0");
+			$jsload = $db->get("jsload");
+			return $jsload;
+	}
+	function getTDashboardone($id,$grpid)
+	{
+			$db = MysqliDb::getInstance();
+			$db->where("id",$id);
+			$db->where("groups",$grpid);
+			$jsload = $db->getOne("dashboards");
+			return $jsload;
+	}
+	function getTDashboard2($grpid)
+	{
+			$db = MysqliDb::getInstance();
+			$db->orderBy("status","desc");
+			$db->where("groups",$grpid);
 			$jsload = $db->get("dashboards");
+			return $jsload;
+	}
+	function getTDashboard()
+	{
+			$db = MysqliDb::getInstance();
+			$db->orderBy("status","desc");
+			$db->where("status","1");
+			$jsload = $db->get("dashboards");
+			return $jsload;
+	}
+	function getTDashboardgroup()
+	{
+			$db = MysqliDb::getInstance();
+			$jsload = $db->get("dashboardgroups");
+			return $jsload;
+	}
+	function getTDashboardgroupOnebyname($groupname)
+	{
+			$db = MysqliDb::getInstance();
+			$jsload = $db->getOne("dashboardgroups");
 			return $jsload;
 	}
 	function getTCong()
@@ -34,6 +80,32 @@ error_reporting(E_ALL);
 			$db = MysqliDb::getInstance();
 			$jsload = $db->get("config");
 			return $jsload;
+	}
+	//cmdgroups
+	function getcmdgroupsByDashId($dashid)
+	{
+			$db = MysqliDb::getInstance();
+			$db->where("status","1");
+			$db->where("dashboardid",$dashid);
+			$result = $db->get("cmdgroups");
+			return $result;
+	}
+	function getdashboardsByGroupId($groupid)
+	{
+			$db = MysqliDb::getInstance();
+			$db->where("status","1");
+			$db->where("groups",$groupid);
+			$result = $db->get("dashboards");
+			return $result;
+	}
+	function getdashboardsByGroupIdone($groupid)
+	{
+			$db = MysqliDb::getInstance();
+			$db->where("status","1");
+			$db->where("groups",$groupid);
+			$db->where("defaultdash",'1');
+			$result = $db->getOne("dashboards");
+			return $result;
 	}
 	function getSingleCommand($id)
 	{
@@ -43,11 +115,19 @@ error_reporting(E_ALL);
 			$result = $db->getOne("jsload");
 			return $result;
 	}
-	
+	function getSingleCommand3($id,$dashid,$grpid)
+	{
+			$db = MysqliDb::getInstance();
+			$db->where("id",$id);
+			$db->where("dashboardid",$dashid);
+			$db->where("grpid",$grpid);
+			$result = $db->getOne("jsload");
+			return $result;
+	}
 	function getCmdTypeSingleCol($tableName, $colName)
 	{
 			$db = MysqliDb::getInstance();
-			$qyr = 'SELECT distinct ' . $colName .  ' from  ' . $tableName ;
+			$qyr = 'SELECT distinct `' . $colName .  '` from  ' . $tableName .' order by `' . $colName . '` desc';
 			$result =  $db->rawQueryValue ($qyr);
 			return $result;
 	}
@@ -55,6 +135,7 @@ error_reporting(E_ALL);
 	function getCmdType()
 	{
 			$db = MysqliDb::getInstance();
+			$db->orderBy("type","asc");
 			$db->where("status","1");
 			$result = $db->get("type");
 			return $result;
@@ -68,10 +149,13 @@ error_reporting(E_ALL);
 			return $result;
 	}
 	
-	 function insertCommand($typ,$cmd,$dim,$val,$spe,$tab,$sheet)
+	 function insertCommand($dashboardid,$grpid, $typ,$cmd,$dim,$val,$spe,$tab,$sheet)
 	 {
 			   $db = MysqliDb::getInstance();
-			   $data = Array ("type" => $typ,
+			   $data = Array (
+			   "dashboardid" => $dashboardid,
+			   "grpid" => $grpid,
+			   "type" => $typ,
                "command" => $cmd,
                "dimension" => $dim,
 			   "value" => $val,
@@ -81,11 +165,47 @@ error_reporting(E_ALL);
 				);
 				$id = $db->insert ('jsload', $data);
 				if($id)
-					return 1;
+					return $id;
 				else
-					return 'insert failed: ' . $db->getLastError();
+					0;
 	 }
-	 
+	 function getSingleDashboardgroups($id)
+		{
+				$db = MysqliDb::getInstance();
+				$db->where("id",$id);
+				$result = $db->getOne("dashboardgroups");
+				return $result;
+		}
+	 function insertgroupdashboard($groupname, $description)
+	 {
+			   $db = MysqliDb::getInstance();
+			   $data = Array (
+			   "groupname" => $groupname,
+			   "description" => $description,
+               "status" => 1
+				);
+				$id = $db->insert ('dashboardgroups', $data);
+				if($id)
+					return $id;
+				else
+					return 0;
+	 }
+	  function insertdashboard($groups, $dashboardname,$url,$defaultdash )
+	 {
+			   $db = MysqliDb::getInstance();
+			   $data = Array (
+			   "groups" => $groups,
+			   "dashboardname" => $dashboardname,
+			   "url" => $url,
+			   "defaultdash" => $defaultdash,
+               "status" => 1
+				);
+				$id = $db->insert ('dashboards', $data);
+				if($id)
+					return $id;
+				else
+					return 0;
+	 }
 	 function deleteCmd($id)
 	 {
 		 $db = MysqliDb::getInstance();
@@ -96,19 +216,34 @@ error_reporting(E_ALL);
 			 return false;
 	 }
 	 
-	 function updateCmd($typ,$cmd,$dim,$val,$spe,$tab,$sheet,$id)
+	function deleteById($id,$tableName)
 	 {
 		 $db = MysqliDb::getInstance();
-			   $data = Array ("type" => $typ,
+		 $db->where('id', $id);
+		 if($db->delete($tableName))
+			 return true;
+		 else
+			 return false;
+	 }
+
+	 function updateCmd($cmd,$dim,$val,$spe,$tab,$sheet,$status,$id,$dashid,$grpid)
+	 {
+		 $db = MysqliDb::getInstance();
+			   $data = Array (
+			   
                "command" => $cmd,
                "dimension" => $dim,
 			   "value" => $val,
                "speech" => $spe,
                "TableauTable" => $tab,
-			   "TableauSheet" => $sheet
+			   "TableauSheet" => $sheet,
+			   "status" => $status,
+
 				);
 
-		$db->where ('id', $id);
+		$db->where ("id", $id);
+		$db->where("grpid",$grpid);
+		$db->where("dashboardid",$dashid);
 		if ($db->update ('jsload', $data))
 			 return 1;
 		 else
@@ -129,6 +264,23 @@ error_reporting(E_ALL);
 			 return 0;
 	 }
 	 
+function updateDashboard2($id,$grpid,$dashboardname,$url,$defaultdash,$status)
+	 {
+		 $db = MysqliDb::getInstance();
+			   $data = Array (
+               "dashboardname" => $dashboardname,
+			   "url" => $url,
+			   "defaultdash" => $defaultdash,
+               "status" => $status
+				);
+		$db->where ('id', $id);
+		$db->where ('groups', $grpid);
+		if ($db->update ('dashboards', $data))
+			 return 1;
+		 else
+			 return 0;
+	 }
+
 	 function updateDashboard($id,$dashboardname,$url,$defaultdash,$status)
 	 {
 		 $db = MysqliDb::getInstance();
@@ -145,17 +297,52 @@ error_reporting(E_ALL);
 		 else
 			 return 0;
 	 }
-	 
-	 function getTypeDropdown()
+	  function updategroupdashboard($id,$groupname, $description,$status)
+	 {
+		 $db = MysqliDb::getInstance();
+			   $data = Array (
+               "id" => $id,
+			   "groupname" => $groupname,
+			   "description" => $description,
+               "status" => $status
+				);
+		$db->where ('id', $id);
+		if ($db->update ('dashboardgroups', $data))
+			 return 1;
+		 else
+			 return 0;
+	 }
+
+	 function getTypeDropdown($selected="")
 	 {
 		 $db = MysqliDb::getInstance();
 		 $s = '';
 		 $cmdTypes = getCmdType();
 		 foreach ($cmdTypes as $types)
 		 {
+		 	if ($selected != null && $types ==$selected)
+		 	{
+		 		$s .= "<option value='".$types['type']." selected='selected'>" .    $types['type']. ' - ' . $types['description']. "</option>";
+		 	}
+		 	else
+		 	{
 			 $s .= "<option value='".$types['type']."'>" .    $types['type']. ' - ' . $types['description']. "</option>";
+		 	}
 		 }
 		 return  "<select name='filter' id='filter' class='form-control'>" . $s . "</select>";
+		 	
+	 }
+	 
+	  function getDashboardDropdown()
+	 {
+		 $db = MysqliDb::getInstance();
+		 $s = '';
+		 $cmdTypes = getTDashboard();
+		 foreach ($cmdTypes as $types)
+		 {
+			 $s .= "<option value='".$types['id']."'>" .    $types['dashboardname']."</option>";
+		 }
+		 return  "<select name='dashboardid' id='dashboardid' class='form-control'>" . $s . "</select>";
 	 }
 	 
 	 function keyPairValue($tableName, $keyCol, $valCol)
@@ -177,7 +364,75 @@ error_reporting(E_ALL);
 	  return $data;
 }
 
-		
+		/////////// function ///////////////////
+function tHierarchyfilter($dimension,$fvalue,$TableauSheet)
+{
+
+$dim= array();
+$strng = "";
+$size = 0;
+$dim= explode(",", $dimension);
+
+for ($i=0; $i < sizeof($dim)-1 ; $i++) { 				
+	$strng = $strng."tAllfilter( '".$dim[$i]."','','".$TableauSheet."');";
+	$size = $size+1;
+}
+echo $strng = $strng."tFilter( '".$dim[$size]."','".$fvalue."','".$TableauSheet."');";
+}
+
+//DynamicTableCommand-tHierarchyfilter
+function DynamicTableCommandtHierarchyfilter($dimension,$TableauTable,$TableauSheet,$command,$speech)
+{
+
+$dim= array();
+$strng = "";
+$constr = "";
+$size = 0;
+$dim = explode(",", $dimension);
+$extualDim = $dim[sizeof($dim)-1];
+
+$dynCmds = getCmdTypeSingleCol($TableauTable ,$extualDim );
+foreach ($dynCmds as $dynCmd)
+{
+$strng = "";
+if ($speech != '')
+	{ 
+		for ($i=0; $i < sizeof($dim)-1 ; $i++) 
+		{ 				
+			$strng = $strng."tAllfilter( '".$dim[$i]."','','".$TableauSheet."');";
+		}
+		$constr .=  "'". $command.' '.$dynCmd."' : function() {".$strng."tFilter( '".$extualDim."','".$dynCmd."','".$TableauSheet."');Speech('".$speech.' '.$dynCmd."')},";
+	}
+	else
+	{
+		for ($i=0; $i < sizeof($dim)-1 ; $i++) 
+		{ 				
+			$constr =  $strng ."tAllfilter( '".$dim[$i]."','','".$TableauSheet."');";
+		}
+		$constr .=  $constr."'". $command.' '.$dynCmd."' : function() {".$strng."tFilter( '".$extualDim."','".$dynCmd."','".$TableauSheet."');},";
+		//$strng = "'". $command.' '.$dynCmd."' : function() {". $strng."tFilter( '".$extualDim."','".$dynCmd."','".$TableauSheet."');},";
+	}
+
+}
+
+return $constr;
+}
+
+//str_replace("world","Peter","Hello world!");
+function tparameter($dimension,$command,$fvalue)
+{
+$strng = "";
+for ($i=1;$i<=$fvalue;$i++)
+{	
+     $cmd =  str_replace("{number}",$i,$command);
+	//changeParameterValueAsync(dimension, fvalue)
+	 // "tSetParameter( '".$dim[$size]."','','".$TableauSheet."');";
+	  $strng .= "'".$cmd."' : function() { tSetParameter( '" .$dimension."','".$i."'); Speech('".$cmd."')},";
+}
+return $strng;
+}
+
+
 		$keyPairCongig = array();
 		$keyPairCongig = keyPairValue('config','congkey','congvalues');
 

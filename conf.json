@@ -1,0 +1,9 @@
+{
+"host" : "localhost",
+"username" : "root",
+"password" : "root",
+"db" : "tableau",
+"port" : "3306",
+"prefix" : "",
+"charset" : "utf8"
+}
